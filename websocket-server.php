@@ -8,7 +8,6 @@ use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
 
 
-
 class RandomNumberWebSocket implements MessageComponentInterface
 {
     protected $clients;
@@ -21,8 +20,8 @@ class RandomNumberWebSocket implements MessageComponentInterface
     public function onOpen(ConnectionInterface $conn)
     {
         $this->clients->attach($conn);
-    }
 
+    }
 
     public function onClose(ConnectionInterface $conn)
     {
@@ -42,46 +41,29 @@ class RandomNumberWebSocket implements MessageComponentInterface
 
     public function onMessage(ConnectionInterface $from, $msg)
     {
+
         $data = json_decode($msg, true);
-        if (isset($data['qr'])) {
+        if (isset($data['Id'])) {
+            $this->clientIds[$from->resourceId] = $data['Id'];
+//            echo "Received clientId: {$data['Id']} from connection ({$from->resourceId})\n";
+        }
+        if (isset($data['qr']) && isset($data['clientId'])) {
             $qr = $data['qr'];
-            echo "Received new QR code: $qr\n";
-            $this->sendToAllClients($msg); // отправляем сообщение всем клиентам
+            $clientId = $data['clientId'];
+            echo "Received new QR code: $qr from clientId: $clientId\n";
         }
-    }
-
-    public function sendToAllClients($msg)
-    {
+// Send the QR code to clients with matching ID
         foreach ($this->clients as $client) {
-            $client->send($msg);
+            $clientResourceId = $client->resourceId;
+            //"если у нас есть ID клиента для этого подключения И этот ID  равен  $clientId".
+            if (isset($this->clientIds[$clientResourceId]) && $this->clientIds[$clientResourceId] == $clientId) {
+                $client->send($msg);
+            }else{
+                $client->send('id не совпадают');
+            }
         }
     }
 
-//    public function onMessage(ConnectionInterface $from, $msg)
-//    {
-//        $data = json_decode($msg, true);
-//        if (isset($data['id'])) {
-//            $id = $data['id'];
-//
-//            if ($id == '88') {
-//                $qr = $data['qr'];
-//                echo "Received new QR code: $qr\n";
-//                $message = json_encode([
-//                    'qr' => $qr
-//                ]);
-//                foreach ($this->clients as $client) {
-//                    $client->send($message);
-//                }
-//            }
-//        }
-//    }
-
-//    public function onMessage(ConnectionInterface $from, $msg)
-//    {
-//        $data = json_decode($msg, true);
-//        $qr = $data['qr'];
-//        echo "Received new QR code: $qr\n"; // добавленная строка
-//    }
 }
 
 $loop = React\EventLoop\Factory::create();

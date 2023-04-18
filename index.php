@@ -12,7 +12,7 @@
 
     socket.onopen = (event) => {
         console.log('WebSocket connection established');
-        // socket.send(JSON.stringify({id: 88})); // Здесь отправляем ID на сервер
+        socket.send(JSON.stringify({Id: 88})); // Здесь отправляем ID на сервер
     };
 
 
@@ -39,6 +39,7 @@
     socket.addEventListener('close', function (event) {
         console.log('Connection closed.');
     });
+
 </script>
 </body>
 </html>
