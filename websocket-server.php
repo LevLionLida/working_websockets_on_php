@@ -6,6 +6,7 @@ use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
+use React\EventLoop\Loop;
 
 
 class RandomNumberWebSocket implements MessageComponentInterface
@@ -15,6 +16,8 @@ class RandomNumberWebSocket implements MessageComponentInterface
     public function __construct()
     {
         $this->clients = new \SplObjectStorage;
+        $this->loop = Loop::get();
+
     }
 
     public function onOpen(ConnectionInterface $conn)
@@ -26,10 +29,6 @@ class RandomNumberWebSocket implements MessageComponentInterface
     public function onClose(ConnectionInterface $conn)
     {
         echo "Connection closed ({$conn->resourceId})\n";
-        if (isset($this->timers[$conn->resourceId])) {
-            $this->loop->cancelTimer($this->timers[$conn->resourceId]);
-            unset($this->timers[$conn->resourceId]);
-        }
         $this->clients->detach($conn);
     }
 
@@ -52,21 +51,20 @@ class RandomNumberWebSocket implements MessageComponentInterface
             $clientId = $data['clientId'];
             echo "Received new QR code: $qr from clientId: $clientId\n";
         }
+
+
 // Send the QR code to clients with matching ID
         foreach ($this->clients as $client) {
             $clientResourceId = $client->resourceId;
             //"если у нас есть ID клиента для этого подключения И этот ID  равен  $clientId".
             if (isset($this->clientIds[$clientResourceId]) && $this->clientIds[$clientResourceId] == $clientId) {
                 $client->send($msg);
-            }else{
-                $client->send('id не совпадают');
             }
         }
     }
-
 }
 
-$loop = React\EventLoop\Factory::create();
+//$loop = React\EventLoop\Factory::create();
 $randomNumberWebSocket = new RandomNumberWebSocket();
 
 $server = IoServer::factory(
